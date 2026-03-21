@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Minecraft Portátil para Linux Mint</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #e0e0e0;
+      --fg: #1a1a18;
+      --accent: #3d8a3e;
+      --accent-light: #e8f5e9;
+      --border: #d4d2cc;
+      --muted: #6b6a66;
+      --tag-bg: #e9e8e4;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 560px;
+      width: 100%;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.7rem;
+      color: var(--accent);
+      background: var(--accent-light);
+      border: 1px solid #c8e6c9;
+      border-radius: 4px;
+      padding: 0.3rem 0.6rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    h1 {
+      font-size: clamp(1.6rem, 5vw, 2.2rem);
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-weight: 400;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 2rem 0;
+    }
+
+    .section-label {
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .requirements {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-bottom: 2rem;
+    }
+
+    .req-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .req-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .req-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .req-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .req-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-family: 'Roboto', sans-serif;
+    }
+
+    .download-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 1rem 1.25rem;
+      background: var(--fg);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.1s;
+      letter-spacing: -0.01em;
+    }
+
+    .download-btn:hover {
+      background: #2a2a28;
+      transform: translateY(-1px);
+    }
+
+    .download-btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-meta {
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 400;
+      color: #aaa;
+      letter-spacing: 0;
+    }
+
+    .footer-note {
+      margin-top: 1.5rem;
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.68rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 2rem;
+    }
+
+    .tag {
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.68rem;
+      padding: 0.25rem 0.6rem;
+      background: var(--tag-bg);
+      border-radius: 4px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="badge">Código aberto · Gratuito</div>
+
+    <h1>Minecraft Portátil<br>para <span>Linux Mint</span></h1>
+
+    <p class="subtitle">
+      Configure pelo Windows com o .exe e leve o Minecraft num pendrive — sem instalação, pronto pra rodar no Linux Mint.
+    </p>
+
+    <div class="tags">
+      <span class="tag">Linux Mint</span>
+      <span class="tag">Portátil</span>
+      <span class="tag">Pendrive</span>
+      <span class="tag">Configurado no Windows</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <p class="section-label">Requisitos</p>
+
+    <div class="requirements">
+      <div class="req-item">
+        <span class="req-icon">🪟</span>
+        <div class="req-text">
+          <span class="req-title">Windows (para configurar)</span>
+          <span class="req-desc">Windows 10 ou superior</span>
+        </div>
+      </div>
+      <div class="req-item">
+        <span class="req-icon">🐧</span>
+        <div class="req-text">
+          <span class="req-title">Linux Mint (para jogar)</span>
+          <span class="req-desc">Linux Mint 21+ recomendado</span>
+        </div>
+      </div>
+      <div class="req-item">
+        <span class="req-icon">💾</span>
+        <div class="req-text">
+          <span class="req-title">HD ou SSD externo (recomendado)</span>
+          <span class="req-desc">Mín. 2 GB · Recomendado 4 GB · Pendrive funciona, mas desgasta mais rápido por causa da escrita aleatória do Minecraft</span>
+        </div>
+      </div>
+      <div class="req-item">
+        <span class="req-icon">☕</span>
+        <div class="req-text">
+          <span class="req-title">Java</span>
+          <span class="req-desc">Incluído no pacote, não precisa instalar</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBSTITUA O href PELO SEU LINK DO MEGA/MEDIAFIRE -->
+    <a class="download-btn" href="https://mega.nz/file/5kIw3I6L#TrJh0LU_O48WUMb-9yMzXbAIiX7oE2z5idbMY_JE2Ao" target="_blank">
+      <span>⬇ Baixar agora</span>
+      <span class="btn-meta">1,08 GB · .exe</span>
+    </a>
+
+    <p class="footer-note">
+      Dúvidas? Abra uma issue no repositório do GitHub.<br>
+      Este projeto utiliza o <a href="https://skmedix.pl/sklauncher" target="_blank" style="color: var(--muted);">SKLauncher</a>.<br>
+      Não afiliado à Mojang / Microsoft / SKLauncher.
+    </p>
+
+  </div>
+</body>
+</html>
