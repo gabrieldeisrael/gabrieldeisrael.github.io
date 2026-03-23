@@ -973,6 +973,10 @@
     <span class="d-emoji">🧮</span>
     <span class="d-label">Calculadora</span>
   </div>
+  <div class="desk-icon" onclick="selectIcon(this)" ondblclick="window.open('https://gabrielviado.github.io','_blank')">
+    <span class="d-emoji">⛏️</span>
+    <span class="d-label">Eaglercraft 1.8</span>
+  </div>
   <div class="desk-icon" onclick="selectIcon(this)" ondblclick="openNCS()">
     <span class="d-emoji">🎵</span>
     <span class="d-label">Music Player</span>
@@ -1926,18 +1930,30 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
     ncsIdx = idx;
     const t = NCS_TRACKS[idx];
     ncsAudio.src = t.file;
+    ncsAudio.load();
     document.getElementById('ncs-song-name').textContent = t.title;
     document.getElementById('ncs-artist-name').textContent = t.artist;
     document.getElementById('ncs-title-text').textContent = t.title + ' — ' + t.artist;
     ncsUpdatePlaylist();
-    if (play) { ncsAudio.play(); ncsPlaying = true; ncsSetPlayBtn(); }
+    if (play) {
+      ncsAudio.addEventListener('canplay', function handler() {
+        ncsAudio.removeEventListener('canplay', handler);
+        ncsAudio.play().then(() => {
+          ncsPlaying = true; ncsSetPlayBtn();
+        }).catch(e => console.warn('NCS play error:', e));
+      }, { once: true });
+    }
   }
 
   function ncsPlayPause() {
-    if (!ncsAudio.src) { ncsLoad(0, true); return; }
-    if (ncsPlaying) { ncsAudio.pause(); ncsPlaying = false; }
-    else { ncsAudio.play(); ncsPlaying = true; }
-    ncsSetPlayBtn();
+    if (!ncsAudio.src || ncsAudio.src === window.location.href) { ncsLoad(0, true); return; }
+    if (ncsPlaying) {
+      ncsAudio.pause(); ncsPlaying = false; ncsSetPlayBtn();
+    } else {
+      ncsAudio.play().then(() => {
+        ncsPlaying = true; ncsSetPlayBtn();
+      }).catch(e => console.warn('NCS play error:', e));
+    }
   }
 
   function ncsSetPlayBtn() {
