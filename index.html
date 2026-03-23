@@ -1923,41 +1923,31 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
     { file: 'Elektronomia_-_Sky_High__NCS_Release_.mp3',       title: 'Sky High',         artist: 'Elektronomia' },
   ];
 
-  let ncsIdx = 0, ncsShuffle = false, ncsPlaying = false;
+  let ncsIdx = 0, ncsShuffle = false;
   const ncsAudio = document.getElementById('ncs-audio');
 
   function ncsLoad(idx, play) {
     ncsIdx = idx;
     const t = NCS_TRACKS[idx];
     ncsAudio.src = t.file;
-    ncsAudio.load();
     document.getElementById('ncs-song-name').textContent = t.title;
     document.getElementById('ncs-artist-name').textContent = t.artist;
     document.getElementById('ncs-title-text').textContent = t.title + ' — ' + t.artist;
     ncsUpdatePlaylist();
-    if (play) {
-      ncsAudio.addEventListener('canplay', function handler() {
-        ncsAudio.removeEventListener('canplay', handler);
-        ncsAudio.play().then(() => {
-          ncsPlaying = true; ncsSetPlayBtn();
-        }).catch(e => console.warn('NCS play error:', e));
-      }, { once: true });
-    }
+    if (play) ncsAudio.play();
   }
 
   function ncsPlayPause() {
-    if (!ncsAudio.src || ncsAudio.src === window.location.href) { ncsLoad(0, true); return; }
-    if (ncsPlaying) {
-      ncsAudio.pause(); ncsPlaying = false; ncsSetPlayBtn();
-    } else {
-      ncsAudio.play().then(() => {
-        ncsPlaying = true; ncsSetPlayBtn();
-      }).catch(e => console.warn('NCS play error:', e));
+    if (!ncsAudio.src || ncsAudio.src === window.location.href) {
+      ncsLoad(0, true);
+      return;
     }
+    if (ncsAudio.paused) ncsAudio.play();
+    else ncsAudio.pause();
   }
 
   function ncsSetPlayBtn() {
-    document.getElementById('ncs-play-btn').textContent = ncsPlaying ? '⏸' : '▶';
+    document.getElementById('ncs-play-btn').textContent = ncsAudio.paused ? '▶' : '⏸';
   }
 
   function ncsNext() {
@@ -1969,7 +1959,7 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
 
   function ncsPrev() {
     if (ncsAudio.currentTime > 3) { ncsAudio.currentTime = 0; return; }
-    ncsLoad((ncsIdx - 1 + NCS_TRACKS.length) % NCS_TRACKS.length, ncsPlaying);
+    ncsLoad((ncsIdx - 1 + NCS_TRACKS.length) % NCS_TRACKS.length, !ncsAudio.paused);
   }
 
   function ncsShuffleToggle() {
@@ -1997,8 +1987,8 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
     document.getElementById('ncs-prog-bar').style.width = pct + '%';
   });
   ncsAudio.addEventListener('ended', ncsNext);
-  ncsAudio.addEventListener('play', function() { ncsPlaying = true; ncsSetPlayBtn(); });
-  ncsAudio.addEventListener('pause', function() { ncsPlaying = false; ncsSetPlayBtn(); });
+  ncsAudio.addEventListener('play', ncsSetPlayBtn);
+  ncsAudio.addEventListener('pause', ncsSetPlayBtn);
 
   function ncsTab(tab) {
     const isPlaylist = tab === 'playlist';
@@ -2052,7 +2042,7 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
   }
 
   function closeNCS() {
-    ncsAudio.pause(); ncsPlaying = false; ncsSetPlayBtn();
+    ncsAudio.pause();
     document.getElementById('ncs').style.display = 'none';
     document.getElementById('taskbar-ncs-btn').style.display = 'none';
   }
