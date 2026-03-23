@@ -273,7 +273,7 @@
 
 
   /* ── EXPLORER ── */
-  #explorer {
+  .explorer-window {
     position: fixed;
     top: 60px;
     left: 80px;
@@ -291,7 +291,7 @@
     overflow: hidden;
   }
 
-  #explorer.open { display: flex; }
+  .explorer-window.open { display: flex; }
 
   /* barra de título */
   .exp-titlebar {
@@ -544,10 +544,28 @@
     position: fixed;
     top: 10px;
     left: 10px;
+    bottom: 50px;
     display: flex;
     flex-direction: column;
     gap: 8px;
     z-index: 10;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  /* ── PASTAS NO CANTO SUPERIOR DIREITO ── */
+  #desktop-folders {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 10;
+  }
+
+  .folder-icon {
+    /* estilos específicos para pastas se necessário */
   }
 
   .desk-icon {
@@ -652,7 +670,6 @@
   .calc-fn  { background:#d4d0c8; color:#c00; }
   .calc-mem { background:#d4d0c8; color:#00a; font-size:10px; }
   .calc-eq  { background:#d4d0c8; }
-  }
 </style>
 </head>
 <body>
@@ -786,7 +803,7 @@
   </button>
 
   <div class="quick-launch">
-    <div class="ql-btn" title="Área de trabalho">🖥️</div>
+    <div class="ql-btn" title="Meu Computador" onclick="openExplorer()" style="cursor:pointer;">🖥️</div>
   </div>
 
   <div id="window-area" style="display:flex;align-items:center;gap:3px;padding:0 4px;flex:1;">
@@ -842,7 +859,7 @@
 
 
 <!-- EXPLORER -->
-<div id="explorer">
+<div id="explorer" class="explorer-window">
   <div class="exp-titlebar" id="exp-titlebar">
     <span class="exp-title-icon">🖥️</span>
     <span class="exp-title-text">Meu Computador</span>
@@ -979,6 +996,26 @@
   <div class="desk-icon" onclick="selectIcon(this)" ondblclick="openNCS()">
     <span class="d-emoji">🎵</span>
     <span class="d-label">Music Player</span>
+  </div>
+  <div class="desk-icon" onclick="selectIcon(this)" ondblclick="window.open('https://gabrielnadamacho.github.io','_blank')">
+    <span class="d-emoji">📁</span>
+    <span class="d-label">Outros Projetos</span>
+  </div>
+</div>
+
+<!-- PASTAS NO CANTO SUPERIOR DIREITO -->
+<div id="desktop-folders">
+  <div class="desk-icon folder-icon" onclick="selectIcon(this)" ondblclick="openFolder('jogos')">
+    <span class="d-emoji">📁</span>
+    <span class="d-label">Jogos</span>
+  </div>
+  <div class="desk-icon folder-icon" onclick="selectIcon(this)" ondblclick="openFolder('escola')">
+    <span class="d-emoji">📁</span>
+    <span class="d-label">Escola</span>
+  </div>
+  <div class="desk-icon folder-icon" onclick="openAccessDenied()">
+    <span class="d-emoji">📁</span>
+    <span class="d-label">Requer Windows</span>
   </div>
 </div>
 
@@ -1311,11 +1348,16 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
   }
 
   function openAccessDenied() {
-    document.getElementById('access-denied').style.display = 'block';
+    // fechar outros popups antigos
+    document.querySelectorAll('#access-denied').forEach(el => el.style.display = 'none');
+
+    // mostrar apenas o popup original (global)
+    const access = document.getElementById('access-denied');
+    if (access) access.style.display = 'block';
   }
 
   function closeAccessDenied() {
-    document.getElementById('access-denied').style.display = 'none';
+    document.querySelectorAll('#access-denied').forEach(el => el.style.display = 'none');
   }
 
   // drag do popup de acesso negado
@@ -1337,6 +1379,7 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
       win.style.left = (e.clientX - ox) + 'px';
       win.style.top  = (e.clientY - oy) + 'px';
       win.style.transform = 'none';
+      constrainWindowPosition(win);
     });
     document.addEventListener('mouseup', function() { dragging = false; });
   })();
@@ -1348,46 +1391,226 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
     const exp = document.getElementById('explorer');
     exp.classList.add('open');
     exp.style.display = 'flex';
-    // mostrar botão na taskbar
-    document.getElementById('taskbar-explorer-btn').style.display = 'flex';
-    document.getElementById('taskbar-explorer-btn').classList.remove('minimized');
+
+    // botao explorer na taskbar (gerar se nao existir)
+    let taskbarBtn = document.getElementById('taskbar-explorer-btn');
+    if (!taskbarBtn) {
+      taskbarBtn = document.createElement('div');
+      taskbarBtn.id = 'taskbar-explorer-btn';
+      taskbarBtn.className = 'taskbar-window-btn';
+      taskbarBtn.innerHTML = '<span>🖥️</span><span>Meu Computador</span>';
+      taskbarBtn.onclick = () => restoreExplorer('explorer');
+      taskbarBtn.ondblclick = () => closeExplorer('explorer');
+      document.getElementById('window-area').appendChild(taskbarBtn);
+    }
+
+    taskbarBtn.style.display = 'flex';
+    taskbarBtn.classList.remove('minimized');
+
     // fechar menu
     document.getElementById('start-menu').classList.remove('open');
     document.getElementById('start-btn').classList.remove('active');
   }
 
-  function closeExplorer() {
-    document.getElementById('explorer').classList.remove('open');
-    document.getElementById('explorer').style.display = 'none';
-    document.getElementById('taskbar-explorer-btn').style.display = 'none';
+  function openFolder(folderType) {
+    // fechar qualquer popup acess denied aberto (evita ver um popup antigo em nova janela)
+    closeAccessDenied();
+
+    // criar ID único para esta instância
+    const instanceId = 'explorer-' + folderType + '-' + Date.now();
+    
+    // clonar o explorer original
+    const originalExplorer = document.getElementById('explorer');
+    const newExplorer = originalExplorer.cloneNode(true);
+    newExplorer.id = instanceId;
+    newExplorer.style.display = 'flex';
+    newExplorer.classList.add('open');
+
+    // remover elemento de acesso negado da cópia (só existe a original global)
+    const clonedDenied = newExplorer.querySelector('#access-denied');
+    if (clonedDenied) clonedDenied.remove();
+    
+    // atualizar IDs internos para serem únicos
+    const titleText = newExplorer.querySelector('.exp-title-text');
+    const content = newExplorer.querySelector('.exp-content');
+    const addressInput = newExplorer.querySelector('.exp-address-input');
+    const maxBtn = newExplorer.querySelector('#exp-max-btn');
+    if (maxBtn) maxBtn.id = 'exp-max-btn-' + instanceId;
+    
+    // definir título e conteúdo baseado no tipo de pasta
+    if (folderType === 'jogos') {
+      titleText.textContent = 'Jogos';
+      addressInput.value = 'Jogos';
+      content.innerHTML = `
+        <div class="exp-empty">
+          <div class="drive-icon" style="margin: 20px auto;">
+            <span class="d-emoji" style="font-size: 48px;">🎮</span>
+            <span class="drive-label">Jogos</span>
+          </div>
+          <p style="text-align: center; color: #666; margin-top: 20px;">Esta pasta contém jogos divertidos!</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 30px;">
+            <div class="drive-icon" ondblclick="window.open('https://gabrieldeisrael.github.io/minecraftguloso','_blank')" style="cursor: pointer;">
+              <span class="d-emoji">⛏️</span>
+              <span class="drive-label">Minecraft Portátil</span>
+            </div>
+            <div class="drive-icon" ondblclick="window.open('https://gabrieldeisrael.github.io/gabrieltemumps2','_blank')" style="cursor: pointer;">
+              <span class="d-emoji">🎮</span>
+              <span class="drive-label">PS2 Portátil</span>
+            </div>
+            <div class="drive-icon" ondblclick="window.open('https://gabrielviado.github.io','_blank')" style="cursor: pointer;">
+              <span class="d-emoji">⛏️</span>
+              <span class="drive-label">Eaglercraft 1.8</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (folderType === 'escola') {
+      titleText.textContent = 'Escola';
+      addressInput.value = 'Escola';
+      content.innerHTML = `
+        <div style="display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:18px;padding:10px;overflow:auto;width:100%;height:100%;">
+          <div class="drive-icon" ondblclick="window.open('https://docs.google.com/document/u/0/?ftv=1', '_blank')" style="cursor:pointer;">
+            <span class="d-emoji">📄</span>
+            <span class="drive-label">Google Docs</span>
+          </div>
+          <div class="drive-icon" ondblclick="window.open('https://docs.google.com/presentation/u/0/?ftv=1', '_blank')" style="cursor:pointer;">
+            <span class="d-emoji">📊</span>
+            <span class="drive-label">Google Slides</span>
+          </div>
+          <div class="drive-icon" ondblclick="window.open('https://drive.google.com/drive/my-drive', '_blank')" style="cursor:pointer;">
+            <span class="d-emoji">📁</span>
+            <span class="drive-label">Google Drive</span>
+          </div>
+          <div class="drive-icon" ondblclick="window.open('https://meet.google.com/', '_blank')" style="cursor:pointer;">
+            <span class="d-emoji">🎥</span>
+            <span class="drive-label">Google Meet</span>
+          </div>
+          <div class="drive-icon" ondblclick="window.open('https://classroom.google.com/', '_blank')" style="cursor:pointer;">
+            <span class="d-emoji">🏫</span>
+            <span class="drive-label">Google Classroom</span>
+          </div>
+          <div class="drive-icon" ondblclick="window.open('https://www.seescola.pr.gov.br/', '_blank')" style="cursor:pointer;">
+            <span class="d-emoji">💻</span>
+            <span class="drive-label">SE Escola PR</span>
+          </div>
+          <div class="drive-icon" ondblclick="window.open('https://www.educacao.pr.gov.br', '_blank')" style="cursor:pointer;">
+            <span class="d-emoji">🌐</span>
+            <span class="drive-label">SEED PR</span>
+          </div>
+          <div class="drive-icon" ondblclick="window.open('https://www.educacao.pr.gov.br/escola', '_blank')" style="cursor:pointer;">
+            <span class="d-emoji">📚</span>
+            <span class="drive-label">Portal da Educação PR</span>
+          </div>
+        </div>
+      `;
+    }
+    
+    // adicionar ao body
+    document.body.appendChild(newExplorer);
+    
+    // criar botão na taskbar
+    const taskbarBtn = document.createElement('div');
+    taskbarBtn.id = 'taskbar-' + instanceId + '-btn';
+    taskbarBtn.className = 'taskbar-window-btn';
+    taskbarBtn.innerHTML = '<span>🖥️</span><span>' + titleText.textContent + '</span>';
+    taskbarBtn.onclick = function() { restoreExplorer(instanceId); };
+    taskbarBtn.ondblclick = function() { closeExplorer(instanceId); };
+    
+    const windowArea = document.getElementById('window-area');
+    windowArea.appendChild(taskbarBtn);
+    
+    // configurar eventos da nova janela
+    setupExplorerEvents(instanceId);
+    
+    // fechar menu iniciar
+    document.getElementById('start-menu').classList.remove('open');
+    document.getElementById('start-btn').classList.remove('active');
+  }
+
+  function setupExplorerEvents(instanceId) {
+    const exp = document.getElementById(instanceId);
+    if (!exp) return;
+
+    const titlebar = exp.querySelector('.exp-titlebar');
+    const minBtn = exp.querySelector('.exp-btn[onclick*="minimizeExplorer"]');
+    const maxBtn = exp.querySelector('.exp-btn[onclick*="maximizeExplorer"]');
+    const closeBtn = exp.querySelector('.exp-btn.close');
+
+    if (minBtn) minBtn.onclick = () => minimizeExplorer(instanceId);
+    if (maxBtn) maxBtn.onclick = () => maximizeExplorer(instanceId);
+    if (closeBtn) closeBtn.onclick = () => closeExplorer(instanceId);
+
+    let dragging = false;
+    let ox = 0;
+    let oy = 0;
+
+    titlebar.addEventListener('mousedown', function(e) {
+      if (e.target.classList.contains('exp-btn')) return;
+      dragging = true;
+      ox = e.clientX - exp.offsetLeft;
+      oy = e.clientY - exp.offsetTop;
+      bringToFront(exp);
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+      if (!dragging) return;
+      exp.style.left = (e.clientX - ox) + 'px';
+      exp.style.top = (e.clientY - oy) + 'px';
+      constrainWindowPosition(exp);
+    });
+
+    document.addEventListener('mouseup', function() { dragging = false; });
+  }
+
+  function closeExplorer(instanceId = 'explorer') {
+    const exp = document.getElementById(instanceId);
+    if (!exp) return;
+
+    exp.classList.remove('open');
+    exp.style.display = 'none';
+
+    const btn = document.getElementById('taskbar-' + instanceId + '-btn') || document.getElementById('taskbar-explorer-btn');
+    if (btn) btn.style.display = 'none';
+
+    if (instanceId !== 'explorer') {
+      exp.remove();
+      if (btn) btn.remove();
+    }
+
     isMaximized = false;
   }
 
-  function minimizeExplorer() {
-    const exp = document.getElementById('explorer');
-    const btn = document.getElementById('taskbar-explorer-btn');
-    exp.style.display = 'none';
-    btn.classList.add('minimized');
+  function minimizeExplorer(instanceId = 'explorer') {
+    const exp = document.getElementById(instanceId);
+    const btn = document.getElementById('taskbar-' + instanceId + '-btn') || document.getElementById('taskbar-explorer-btn');
+    if (exp) exp.style.display = 'none';
+    if (btn) btn.classList.add('minimized');
   }
 
-  function restoreExplorer() {
-    const exp = document.getElementById('explorer');
-    const btn = document.getElementById('taskbar-explorer-btn');
+  function restoreExplorer(instanceId = 'explorer') {
+    const exp = document.getElementById(instanceId);
+    const btn = document.getElementById('taskbar-' + instanceId + '-btn') || document.getElementById('taskbar-explorer-btn');
+    if (!exp) return;
+
     if (exp.style.display === 'none') {
       exp.style.display = 'flex';
-      btn.classList.remove('minimized');
+      exp.classList.add('open');
+      if (btn) btn.classList.remove('minimized');
+      bringToFront(exp);
     } else {
-      minimizeExplorer();
+      minimizeExplorer(instanceId);
     }
   }
 
-  function maximizeExplorer() {
-    const exp = document.getElementById('explorer');
-    const btn = document.getElementById('exp-max-btn');
+  function maximizeExplorer(instanceId = 'explorer') {
+    const exp = document.getElementById(instanceId);
+    const btn = document.getElementById('exp-max-btn' + (instanceId !== 'explorer' ? '-' + instanceId : ''));
     const taskbarH = 40;
-    if (!isMaximized) {
-      // salvar estado anterior
-      prevStyle = {
+    if (!exp) return;
+
+    if (!exp.maximized) {
+      exp.prevStyle = {
         top: exp.style.top || '60px',
         left: exp.style.left || '80px',
         width: exp.style.width || '580px',
@@ -1398,16 +1621,16 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
       exp.style.width = '100vw';
       exp.style.height = (window.innerHeight - taskbarH) + 'px';
       exp.style.borderRadius = '0';
-      btn.textContent = '❐';
-      isMaximized = true;
+      if (btn) btn.textContent = '❐';
+      exp.maximized = true;
     } else {
-      exp.style.top = prevStyle.top;
-      exp.style.left = prevStyle.left;
-      exp.style.width = prevStyle.width;
-      exp.style.height = prevStyle.height;
+      exp.style.top = exp.prevStyle.top;
+      exp.style.left = exp.prevStyle.left;
+      exp.style.width = exp.prevStyle.width;
+      exp.style.height = exp.prevStyle.height;
       exp.style.borderRadius = '';
-      btn.textContent = '□';
-      isMaximized = false;
+      if (btn) btn.textContent = '□';
+      exp.maximized = false;
     }
   }
 
@@ -1429,6 +1652,7 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
       if (!dragging) return;
       win.style.left = (e.clientX - ox) + 'px';
       win.style.top  = (e.clientY - oy) + 'px';
+      constrainWindowPosition(win);
     });
 
     document.addEventListener('mouseup', function() { dragging = false; });
@@ -1549,6 +1773,7 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
     document.addEventListener('mousemove', function(e) {
       if (!dragging) return;
       win.style.left = (e.clientX - ox) + 'px'; win.style.top = (e.clientY - oy) + 'px';
+      constrainWindowPosition(win);
     });
     document.addEventListener('mouseup', function() { dragging = false; });
   })();
@@ -1754,6 +1979,7 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
     document.addEventListener('mousemove', function(e) {
       if (!dragging) return;
       win.style.left = (e.clientX - ox) + 'px'; win.style.top = (e.clientY - oy) + 'px';
+      constrainWindowPosition(win);
     });
     document.addEventListener('mouseup', function() { dragging = false; });
   })();
@@ -1761,6 +1987,23 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
   // z-index manager
   let zTop = 200;
   function bringToFront(el) { el.style.zIndex = ++zTop; }
+
+  // colisão com limites da tela
+  function constrainWindowPosition(el) {
+    const taskbarH = 40;
+    let left = el.offsetLeft;
+    let top = el.offsetTop;
+    const width = el.offsetWidth;
+    const height = el.offsetHeight;
+    
+    if (left < 0) left = 0;
+    if (top < 0) top = 0;
+    if (left + width > window.innerWidth) left = window.innerWidth - width;
+    if (top + height > window.innerHeight - taskbarH) top = window.innerHeight - taskbarH - height;
+    
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+  }
 
   // bring to front on click
   ['explorer','notepad','paint','calc'].forEach(id => {
@@ -1892,6 +2135,7 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
     document.addEventListener('mousemove', function(e) {
       if (!dragging) return;
       win.style.left = (e.clientX - ox) + 'px'; win.style.top = (e.clientY - oy) + 'px';
+      constrainWindowPosition(win);
     });
     document.addEventListener('mouseup', function() { dragging = false; });
   })();
@@ -2073,6 +2317,7 @@ Watch: <a href="http://youtu.be/TW9d8vYrVFQ" target="_blank" style="color:#39f;"
     document.addEventListener('mousemove', function(e) {
       if (!dragging) return;
       win.style.left = (e.clientX - ox) + 'px'; win.style.top = (e.clientY - oy) + 'px';
+      constrainWindowPosition(win);
     });
     document.addEventListener('mouseup', function() { dragging = false; });
     win.addEventListener('mousedown', function() { bringToFront(win); });
